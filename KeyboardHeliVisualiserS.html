@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Layout Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .keyboard-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .key {
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            text-align: center;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .popup-key {
+            background-color: #d3f4ff;
+        }
+        .shifted {
+            background-color: #b0e57c;
+        }
+        .capslock {
+            background-color: #ffe57c;
+        }
+        .popup-label {
+            position: absolute;
+            top: 0px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Keyboard Layout</h1>
+    
+    <input type="file" id="jsonFileInput" accept=".json" />
+    <button onclick="loadJsonFile()">Load JSON File</button>
+    <br/><br/>
+
+    <div id="keyboardContainer"></div>
+    <button onclick="renderKeyboard('regular')">Regular Mode</button>
+    <button onclick="renderKeyboard('shiftedManual')">Shifted Manual Mode</button>
+    <button onclick="renderKeyboard('capsLock')">Caps Lock Mode</button>
+
+    <script>
+        let keyboardData = [];
+
+        function loadJsonFile() {
+            const input = document.getElementById('jsonFileInput');
+            if (!input.files[0]) {
+                alert('Please select a JSON file');
+                return;
+            }
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                try {
+                    keyboardData = JSON.parse(event.target.result);
+                    renderKeyboard('regular');  // Render the keyboard after loading
+                } catch (e) {
+                    alert('Error parsing JSON file: ' + e.message);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function renderKeyboard(mode) {
+            const keyboardContainer = document.getElementById("keyboardContainer");
+            keyboardContainer.innerHTML = ''; // Clear previous content
+            
+            if (!keyboardData.length) {
+                alert('Please load a valid keyboard layout JSON file');
+                return;
+            }
+
+            // Iterate over the rows in the JSON
+            keyboardData.forEach(row => {
+                // Create a container for each row
+                const rowDiv = document.createElement("div");
+                rowDiv.classList.add("keyboard-row");
+
+                row.forEach(key => {
+                    let label = key[mode] ? key[mode].label : key.default ? key.default.label : key.label;
+                    
+                    // Create a div for each key
+                    const keyDiv = document.createElement("div");
+                    keyDiv.classList.add("key");
+                    if (mode === 'shiftedManual') keyDiv.classList.add("shifted");
+                    if (mode === 'capsLock') keyDiv.classList.add("capslock");
+
+                    keyDiv.innerHTML = label;
+
+                    // Display popup above the key
+                    let popupLabel = '';
+                    if (key.popup && key.popup.relevant && key.popup.relevant[0].label) {
+                        popupLabel = key.popup.relevant[0].label;
+                    } else if (key.default && key.default.popup && key.default.popup.relevant && key.default.popup.relevant[0].label) {
+                        popupLabel = key.default.popup.relevant[0].label;
+                    }
+
+                    if (popupLabel) {
+                        const popupDiv = document.createElement('div');
+                        popupDiv.classList.add('popup-label');
+                        popupDiv.innerHTML = popupLabel;
+                        keyDiv.appendChild(popupDiv);
+                    }
+
+                    // Highlight the key if it has a popup
+                    let hasPopup = key.popup || (key.default && key.default.popup);
+
+                    if (hasPopup) {
+                        keyDiv.classList.add("popup-key");
+                    }
+
+                    rowDiv.appendChild(keyDiv);
+                });
+
+                keyboardContainer.appendChild(rowDiv);
+            });
+        }
+    </script>
+</body>
+</html>
